@@ -13,12 +13,13 @@ export function sanitizeInput(value: string): string {
  * Builds the QR code payload from a Ticket object.
  * Returns a stable JSON string so downstream consumers can parse it.
  */
-export function buildQRValue(ticket: { id: string; title: string; assignee: string; priority: string; createdAt: string }): string {
+export function buildQRValue(ticket: { id: string; title: string; assignee: string; priority: string; status: string; createdAt: string }): string {
   return JSON.stringify({
     id: ticket.id,
     title: ticket.title,
     assignee: ticket.assignee,
     priority: ticket.priority,
+    status: ticket.status,
     createdAt: ticket.createdAt,
   });
 }

@@ -59,14 +59,14 @@ function TicketForm({ onGenerate }: TicketFormProps) {
   }
 
   const ids = {
-    title:            `${baseId}-title`,
-    titleError:       `${baseId}-title-error`,
-    description:      `${baseId}-description`,
+    title: `${baseId}-title`,
+    titleError: `${baseId}-title-error`,
+    description: `${baseId}-description`,
     descriptionError: `${baseId}-description-error`,
-    assignee:         `${baseId}-assignee`,
-    assigneeError:    `${baseId}-assignee-error`,
-    priority:         `${baseId}-priority`,
-    priorityError:    `${baseId}-priority-error`,
+    assignee: `${baseId}-assignee`,
+    assigneeError: `${baseId}-assignee-error`,
+    priority: `${baseId}-priority`,
+    priorityError: `${baseId}-priority-error`,
   };
 
   return (
@@ -197,9 +197,10 @@ const QR_REVEAL_DURATION = 10; // seconds
 interface QREntryCardProps {
   entry: QREntry;
   onStatusChange: (id: string, status: Ticket['status']) => void;
+  onShowDetails: (ticket: Ticket) => void;
 }
 
-function QREntryCard({ entry, onStatusChange }: QREntryCardProps) {
+function QREntryCard({ entry, onStatusChange, onShowDetails }: QREntryCardProps) {
   const { ticket, qrValue } = entry;
   const statusId = useId();
 
@@ -247,8 +248,8 @@ function QREntryCard({ entry, onStatusChange }: QREntryCardProps) {
   // ── Derived display values ────────────────────────────────────────────────
   const priorityLabel =
     ticket.priority === 'critical' ? '🔴 Critical' :
-    ticket.priority === 'high'     ? '🟠 High'     :
-    ticket.priority === 'medium'   ? '🟡 Medium'   : '🟢 Low';
+      ticket.priority === 'high' ? '🟠 High' :
+        ticket.priority === 'medium' ? '🟡 Medium' : '🟢 Low';
 
   const statusMeta = TICKET_STATUS_OPTIONS.find((s) => s.value === ticket.status)
     ?? TICKET_STATUS_OPTIONS[0];
@@ -286,28 +287,12 @@ function QREntryCard({ entry, onStatusChange }: QREntryCardProps) {
               onClick={handleReveal}
               aria-label={`Show QR code for ticket: ${ticket.title}`}
             >
-              <span className="btn-reveal__icon" aria-hidden="true">🔍</span>
               <span className="btn-reveal__text">Show QR</span>
             </button>
           </div>
         ) : (
           <div className="qr-countdown" aria-live="polite" aria-label={`QR visible for ${countdown} more seconds`}>
-            <svg className="qr-countdown__ring" width="52" height="52" aria-hidden="true">
-              {/* Track circle */}
-              <circle cx="26" cy="26" r="20" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="3" />
-              {/* Progress arc */}
-              <circle
-                cx="26" cy="26" r="20"
-                fill="none"
-                stroke="var(--color-accent)"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                style={{ transition: 'stroke-dashoffset 0.9s linear', transform: 'rotate(-90deg)', transformOrigin: '26px 26px' }}
-              />
-            </svg>
-            <span className="qr-countdown__num">{countdown}s</span>
+
           </div>
         )}
 
@@ -347,8 +332,20 @@ function QREntryCard({ entry, onStatusChange }: QREntryCardProps) {
           <span className="qr-entry__time">{formattedTime}</span>
         </div>
 
-        {/* Assignee */}
-        <p className="qr-entry__assignee" title={ticket.assignee}>👤 {ticket.assignee}</p>
+        {/* Assignee + Show Details Button */}
+        <div className="qr-entry__assignee-row">
+          <p className="qr-entry__assignee" title={ticket.assignee}>👤 {ticket.assignee}</p>
+          <button
+            className="btn-link"
+            onClick={() => {
+              analyticsping('Show ticket details');
+              onShowDetails(ticket);
+            }}
+            aria-label={`Show description for ticket: ${ticket.title}`}
+          >
+            Show Details
+          </button>
+        </div>
       </div>
     </article>
   );
@@ -410,11 +407,42 @@ function EmptyState({ isFiltered }: { isFiltered?: boolean }) {
   );
 }
 
+// ─── TicketModal Component ────────────────────────────────────────────────────
+
+function TicketModal({ ticket, onClose }: { ticket: Ticket; onClose: () => void }) {
+  // Close on Escape key
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
+  return (
+    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <header className="modal-header">
+          <div>
+            <h3 id="modal-title" className="modal-title">{ticket.title}</h3>
+            <p className="modal-subtitle">Ticket #{ticket.id.slice(-6).toUpperCase()}</p>
+          </div>
+          <button className="modal-close" onClick={onClose} aria-label="Close modal">
+            <span aria-hidden="true">✖</span>
+          </button>
+        </header>
+        <div className="modal-body">
+          <p className="modal-description">{ticket.description}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── App Root ─────────────────────────────────────────────────────────────────
 
 export default function App() {
   const [entries, setEntries] = useState<QREntry[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
 
   function handleGenerate(entry: QREntry) {
     setEntries((prev) => [entry, ...prev]);
@@ -481,7 +509,11 @@ export default function App() {
             <div className="qr-grid" role="list" aria-label="Generated ticket QR codes">
               {filteredEntries.map((entry) => (
                 <div key={entry.ticket.id} role="listitem">
-                  <QREntryCard entry={entry} onStatusChange={handleStatusChange} />
+                  <QREntryCard
+                    entry={entry}
+                    onStatusChange={handleStatusChange}
+                    onShowDetails={setSelectedTicket}
+                  />
                 </div>
               ))}
             </div>
@@ -493,6 +525,11 @@ export default function App() {
       <footer className="app-footer">
         <p>Ticket QR Code Generator Worker · ENG-139055 · &copy; {new Date().getFullYear()} Core Infrastructure Team</p>
       </footer>
+
+      {/* Modal Portal */}
+      {selectedTicket && (
+        <TicketModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />
+      )}
     </div>
   );
 }

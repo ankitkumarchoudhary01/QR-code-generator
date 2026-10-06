@@ -11,7 +11,6 @@ describe('validateTicketForm', () => {
       description: 'Users cannot log in on mobile',
       assignee: 'alice@corp.com',
       priority: 'high',
-      status: 'open',
     });
     expect(hasErrors(errors)).toBe(false);
   });
@@ -22,7 +21,6 @@ describe('validateTicketForm', () => {
       description: 'desc',
       assignee: 'bob',
       priority: 'low',
-      status: 'open',
     });
     expect(errors.title).toBeDefined();
   });
@@ -33,7 +31,6 @@ describe('validateTicketForm', () => {
       description: 'desc',
       assignee: 'bob',
       priority: 'low',
-      status: 'open',
     });
     expect(errors.title).toBeDefined();
   });
@@ -44,7 +41,6 @@ describe('validateTicketForm', () => {
       description: '',
       assignee: 'bob',
       priority: 'medium',
-      status: 'open',
     });
     expect(errors.description).toBeDefined();
   });
@@ -55,7 +51,6 @@ describe('validateTicketForm', () => {
       description: 'Desc',
       assignee: '',
       priority: 'medium',
-      status: 'in-progress',
     });
     expect(errors.assignee).toBeDefined();
   });
@@ -66,7 +61,6 @@ describe('validateTicketForm', () => {
       description: '',
       assignee: '',
       priority: 'low',
-      status: 'open',
     });
     expect(errors.title).toBeDefined();
     expect(errors.description).toBeDefined();
@@ -113,6 +107,7 @@ describe('buildQRValue', () => {
       title: 'Test ticket',
       assignee: 'carol',
       priority: 'high',
+      status: 'open' as const,
       createdAt: '2024-01-01T00:00:00.000Z',
     };
     const result = buildQRValue(ticket);
@@ -125,6 +120,7 @@ describe('buildQRValue', () => {
       title: 'Deploy hotfix',
       assignee: 'dave',
       priority: 'critical',
+      status: 'in-progress' as const,
       createdAt: '2024-06-15T12:00:00.000Z',
     };
     const parsed = JSON.parse(buildQRValue(ticket));
@@ -132,6 +128,7 @@ describe('buildQRValue', () => {
     expect(parsed.title).toBe('Deploy hotfix');
     expect(parsed.assignee).toBe('dave');
     expect(parsed.priority).toBe('critical');
+    expect(parsed.status).toBe('in-progress');
     expect(parsed.createdAt).toBe('2024-06-15T12:00:00.000Z');
   });
 
@@ -141,6 +138,7 @@ describe('buildQRValue', () => {
       title: 'T',
       assignee: 'A',
       priority: 'low',
+      status: 'closed' as const,
       createdAt: '2024-01-01T00:00:00.000Z',
     };
     const parsed = JSON.parse(buildQRValue(ticket));

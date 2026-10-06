@@ -13,13 +13,12 @@ vi.mock('qrcode.react', () => ({
 // Helper: fills and submits a valid ticket form
 async function submitTicket(
   user: ReturnType<typeof userEvent.setup>,
-  opts: { title: string; description: string; assignee: string; priority?: string; status?: string }
+  opts: { title: string; description: string; assignee: string; priority?: string }
 ) {
   await user.type(screen.getByLabelText(/ticket title/i), opts.title);
-  await user.type(screen.getByLabelText(/description/i), opts.description);
+  await user.type(screen.getByRole('textbox', { name: /^description/i }), opts.description);
   await user.type(screen.getByLabelText(/assignee/i), opts.assignee);
   if (opts.priority) await user.selectOptions(screen.getByLabelText(/priority/i), opts.priority);
-  if (opts.status) await user.selectOptions(screen.getByLabelText(/^status/i), opts.status);
   await user.click(screen.getByRole('button', { name: /generate qr code/i }));
 }
 
@@ -37,13 +36,12 @@ describe('App — Happy Path', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders all form fields including status', () => {
+  it('renders all form fields', () => {
     render(<App />);
     expect(screen.getByLabelText(/ticket title/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/assignee/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/priority/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^status/i)).toBeInTheDocument();
   });
 
   it('renders the generate button', () => {
@@ -200,8 +198,8 @@ describe('App — Status Filter', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    // Generate an "open" ticket
-    await submitTicket(user, { title: 'Open ticket', description: 'Desc', assignee: 'alice', status: 'open' });
+    // Generate an "open" ticket (default status)
+    await submitTicket(user, { title: 'Open ticket', description: 'Desc', assignee: 'alice' });
 
     // Wait for it to appear
     await waitFor(() => {
@@ -220,11 +218,14 @@ describe('App — Status Filter', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await submitTicket(user, { title: 'In-progress ticket', description: 'Desc', assignee: 'bob', status: 'in-progress' });
+    await submitTicket(user, { title: 'In-progress ticket', description: 'Desc', assignee: 'bob' });
 
     await waitFor(() => {
       expect(screen.getByLabelText(/filter qr codes by status/i)).toBeInTheDocument();
     }, { timeout: 3000 });
+
+    // Change status on the card itself to 'in-progress'
+    await user.selectOptions(screen.getByLabelText(/status for ticket: in-progress ticket/i), 'in-progress');
 
     // Filter by in-progress
     await user.selectOptions(screen.getByLabelText(/filter qr codes by status/i), 'in-progress');
@@ -238,13 +239,12 @@ describe('App — Status Filter', () => {
 // ─── Accessibility ────────────────────────────────────────────────────────────
 
 describe('App — Accessibility (a11y)', () => {
-  it('all inputs have accessible labels including status', () => {
+  it('all inputs have accessible labels', () => {
     render(<App />);
     expect(screen.getByLabelText(/ticket title/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /^description/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/assignee/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/priority/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^status/i)).toBeInTheDocument();
   });
 
   it('generate button has accessible name', () => {
@@ -265,6 +265,50 @@ describe('App — Accessibility (a11y)', () => {
       expect(describedBy).toBeTruthy();
       const errorEl = document.getElementById(describedBy!);
       expect(errorEl).toBeInTheDocument();
+    });
+  });
+});
+
+// ─── Modal Functionality ──────────────────────────────────────────────────────
+
+describe('App — Ticket Modal', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  it('opens modal with ticket description when "Show Details" is clicked, and closes on "✖"', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    // Generate a ticket
+    await submitTicket(user, { 
+      title: 'Modal Test Ticket', 
+      description: 'This is a secret long description for the modal.', 
+      assignee: 'alice' 
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Modal Test Ticket/i)).toBeInTheDocument();
+    });
+
+    // Click Show Details
+    const showDetailsBtn = screen.getByRole('button', { name: /Show description for ticket: Modal Test Ticket/i });
+    await user.click(showDetailsBtn);
+
+    // Verify modal is open and shows description
+    await waitFor(() => {
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeInTheDocument();
+      expect(screen.getByText('This is a secret long description for the modal.')).toBeInTheDocument();
+    });
+
+    // Click close button
+    const closeBtn = screen.getByRole('button', { name: /Close modal/i });
+    await user.click(closeBtn);
+
+    // Verify modal is closed
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
   });
 });
