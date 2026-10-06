@@ -259,10 +259,6 @@ function QREntryCard({ entry, onStatusChange, onShowDetails }: QREntryCardProps)
     timeStyle: 'short',
   });
 
-  // Countdown ring progress (0–100)
-  const ringProgress = isRevealed ? (countdown / QR_REVEAL_DURATION) * 100 : 0;
-  const circumference = 2 * Math.PI * 20; // r=20
-  const strokeDashoffset = circumference - (ringProgress / 100) * circumference;
 
   return (
     <article className="qr-entry" aria-label={`QR code for ticket: ${ticket.title}`}>
