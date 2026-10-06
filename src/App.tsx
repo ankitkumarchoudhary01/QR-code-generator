@@ -1,5 +1,16 @@
 import { useState, useId, useMemo, useRef, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import {
+  LuTicket,
+  LuZap,
+  LuFilter,
+  LuInbox,
+  LuSearch,
+  LuQrCode,
+  LuList,
+  LuUser,
+  LuX
+} from 'react-icons/lu';
 import './styles.css';
 import type { Ticket, TicketFormValues, QREntry, ValidationErrors } from './types';
 import { validateTicketForm, hasErrors, STATUS_OPTIONS, TICKET_STATUS_OPTIONS } from './types';
@@ -72,7 +83,7 @@ function TicketForm({ onGenerate }: TicketFormProps) {
   return (
     <section className="card" aria-label="Ticket QR Code Generator Form">
       <h2 className="card__heading">
-        <span aria-hidden="true">🎟️</span> New Ticket
+        <LuTicket aria-hidden="true" /> New Ticket
       </h2>
       <form className="form" onSubmit={handleSubmit} noValidate>
 
@@ -160,10 +171,10 @@ function TicketForm({ onGenerate }: TicketFormProps) {
             aria-invalid={!!errors.priority}
             aria-describedby={errors.priority ? ids.priorityError : undefined}
           >
-            <option value="low">🟢 Low</option>
-            <option value="medium">🟡 Medium</option>
-            <option value="high">🟠 High</option>
-            <option value="critical">🔴 Critical</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
           </select>
           {errors.priority && (
             <p id={ids.priorityError} className="field__error" role="alert">
@@ -182,7 +193,7 @@ function TicketForm({ onGenerate }: TicketFormProps) {
           {isLoading ? (
             <><span className="spinner" aria-hidden="true" /> Generating…</>
           ) : (
-            <><span aria-hidden="true">⚡</span> Generate QR Code</>
+            <><LuZap aria-hidden="true" /> Generate QR Code</>
           )}
         </button>
       </form>
@@ -247,9 +258,9 @@ function QREntryCard({ entry, onStatusChange, onShowDetails }: QREntryCardProps)
 
   // ── Derived display values ────────────────────────────────────────────────
   const priorityLabel =
-    ticket.priority === 'critical' ? '🔴 Critical' :
-      ticket.priority === 'high' ? '🟠 High' :
-        ticket.priority === 'medium' ? '🟡 Medium' : '🟢 Low';
+    ticket.priority === 'critical' ? 'Critical' :
+      ticket.priority === 'high' ? 'High' :
+        ticket.priority === 'medium' ? 'Medium' : 'Low';
 
   const statusMeta = TICKET_STATUS_OPTIONS.find((s) => s.value === ticket.status)
     ?? TICKET_STATUS_OPTIONS[0];
@@ -330,7 +341,9 @@ function QREntryCard({ entry, onStatusChange, onShowDetails }: QREntryCardProps)
 
         {/* Assignee + Show Details Button */}
         <div className="qr-entry__assignee-row">
-          <p className="qr-entry__assignee" title={ticket.assignee}>👤 {ticket.assignee}</p>
+          <p className="qr-entry__assignee" title={ticket.assignee}>
+            <LuUser style={{ display: 'inline', verticalAlign: 'text-bottom' }} aria-hidden="true" /> {ticket.assignee}
+          </p>
           <button
             className="btn-link"
             onClick={() => {
@@ -361,7 +374,7 @@ function FilterBar({ activeStatus, onStatusChange, totalCount, filteredCount }: 
   return (
     <div className="filter-bar" role="search" aria-label="Filter generated QR codes">
       <label className="filter-bar__label" htmlFor={`${filterId}-status`}>
-        <span aria-hidden="true">🔍</span> Filter by Status
+        <LuFilter aria-hidden="true" /> Filter by Status
       </label>
       <select
         id={`${filterId}-status`}
@@ -389,7 +402,9 @@ function FilterBar({ activeStatus, onStatusChange, totalCount, filteredCount }: 
 function EmptyState({ isFiltered }: { isFiltered?: boolean }) {
   return (
     <div className="empty-state" role="status" aria-live="polite">
-      <span className="empty-state__icon" aria-hidden="true">{isFiltered ? '🔎' : '📭'}</span>
+      <span className="empty-state__icon" aria-hidden="true">
+        {isFiltered ? <LuSearch /> : <LuInbox />}
+      </span>
       <p className="empty-state__title">
         {isFiltered ? 'No matching tickets' : 'No QR codes generated yet'}
       </p>
@@ -422,7 +437,7 @@ function TicketModal({ ticket, onClose }: { ticket: Ticket; onClose: () => void 
             <p className="modal-subtitle">Ticket #{ticket.id.slice(-6).toUpperCase()}</p>
           </div>
           <button className="modal-close" onClick={onClose} aria-label="Close modal">
-            <span aria-hidden="true">✖</span>
+            <LuX aria-hidden="true" />
           </button>
         </header>
         <div className="modal-body">
@@ -465,9 +480,8 @@ export default function App() {
     <div className="app-shell">
       {/* ── Header ── */}
       <header className="app-header">
-        <span className="app-header__icon" aria-hidden="true">🔲</span>
+        <span className="app-header__icon" aria-hidden="true"><LuQrCode /></span>
         <h1 className="app-header__title">Ticket QR Code Generator Worker</h1>
-        <span className="app-header__subtitle">ENG-139055 · Core Infrastructure Overhaul</span>
       </header>
 
       {/* ── Main ── */}
@@ -479,7 +493,7 @@ export default function App() {
         <section aria-label="Generated QR Codes">
           <div className="section-header">
             <h2 className="section-title">
-              <span aria-hidden="true">📋</span> Generated Codes
+              <LuList aria-hidden="true" /> Generated Codes
               {entries.length > 0 && (
                 <span className="count-badge" aria-label={`${entries.length} total entries`}>
                   {entries.length}

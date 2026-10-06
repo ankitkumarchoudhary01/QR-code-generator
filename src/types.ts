@@ -46,11 +46,11 @@ export function hasErrors(errors: ValidationErrors): boolean {
 export type StatusFilter = Ticket['status'] | 'all';
 
 export const STATUS_OPTIONS: { value: StatusFilter; label: string; color: string }[] = [
-  { value: 'all',         label: 'All Statuses',  color: '#6b6b6b' },
-  { value: 'open',        label: '🔵 Open',        color: '#2563eb' },
-  { value: 'in-progress', label: '🟡 In Progress', color: '#d97706' },
-  { value: 'resolved',    label: '🟢 Resolved',    color: '#16a34a' },
-  { value: 'closed',      label: '⚫ Closed',      color: '#374151' },
+  { value: 'all',         label: 'All Statuses', color: '#6b6b6b' },
+  { value: 'open',        label: 'Open',         color: '#2563eb' },
+  { value: 'in-progress', label: 'In Progress',  color: '#d97706' },
+  { value: 'resolved',    label: 'Resolved',     color: '#16a34a' },
+  { value: 'closed',      label: 'Closed',       color: '#374151' },
 ];
 
 export const TICKET_STATUS_OPTIONS = STATUS_OPTIONS.filter(
